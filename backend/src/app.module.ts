@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ImportModule } from './import/import.module';
+import * as entities from './entities';
 
 @Module({
   imports: [
@@ -14,9 +16,9 @@ import { AppService } from './app.service';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [],
+      entities: Object.values(entities),
       synchronize: false,
-    }),
+    }), ImportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
