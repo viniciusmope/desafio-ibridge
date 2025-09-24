@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ImportModule } from './import/import.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import * as entities from './entities';
 
 @Module({
@@ -18,7 +19,9 @@ import * as entities from './entities';
       database: process.env.DB_NAME,
       entities: Object.values(entities),
       synchronize: false,
-    }), ImportModule,
+    }), 
+    ImportModule, 
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
