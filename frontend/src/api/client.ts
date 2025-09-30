@@ -6,21 +6,41 @@ const apiClient = axios.create({
 });
 
 export const getResumo = async (): Promise<ResumoItem[]> => {
-  const response = await apiClient.get('/resumo');
-  return response.data;
+  try {
+    const response = await apiClient.get('/resumo');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar resumo:', error);
+    return [];
+  }
 };
 
 export const getTopOperadores = async (): Promise<TopItem[]> => {
-  const response = await apiClient.get('/top-operadores');
-  return response.data;
+  try {
+    const response = await apiClient.get('/top-operadores');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar top operadores:', error);
+    return [];
+  }
 };
 
 export const getTopListas = async (): Promise<TopItem[]> => {
-  const response = await apiClient.get('/top-listas');
-  return response.data;
+  try {
+    const response = await apiClient.get('/top-listas');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar top listas:', error);
+    return [];
+  }
 };
 
 export const getTopCampanhas = async (): Promise<TopItem[]> => {
-  const response = await apiClient.get('/top-campanhas');
-  return response.data;
+  try {
+    const response = await apiClient.get('/top-campanhas');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar top campanhas:', error);
+    return [];
+  }
 };

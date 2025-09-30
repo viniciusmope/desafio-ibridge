@@ -1,58 +1,31 @@
-import { useEffect, useState } from 'react';
-import { getResumo, getTopOperadores, getTopListas, getTopCampanhas } from './api/client';
-import { SummaryTable } from './components/SummaryTable';
-import { TopChart } from './components/TopChart';
-import type { ResumoItem, TopItem } from './types/data';
+import { Routes, Route, Link } from 'react-router-dom';
+import { DashboardOverview } from './pages/DashboardOverview';
+import { ResumoPage } from './pages/ResumoPage';
+import { TopListasPage } from './pages/TopListasPage';
+import { TopOperadoresPage } from './pages/TopOperadoresPage';
+import { TopCampanhasPage } from './pages/TopCampanhasPage';
 
 function App() {
-  const [resumoData, setResumoData] = useState<ResumoItem[]>([]);
-  const [operadoresData, setOperadoresData] = useState<TopItem[]>([]);
-  const [listasData, setListasData] = useState<TopItem[]>([]);
-  const [campanhasData, setCampanhasData] = useState<TopItem[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [resumo, operadores, listas, campanhas] = await Promise.all([
-          getResumo(),
-          getTopOperadores(),
-          getTopListas(),
-          getTopCampanhas(),
-        ]);
-        setResumoData(resumo);
-        setOperadoresData(operadores);
-        setListasData(listas);
-        setCampanhasData(campanhas);
-      } catch (error) {
-        console.error('Erro ao buscar dados do dashboard:', error);
-      }
-    };
-
-    fetchData();
-  }, []); 
-
   return (
-    <div className="app-container">
-      <h1>Dashboard de Resultados</h1>
-
-      <section>
-        <h2>Resumo por Lista</h2>
-        <SummaryTable data={resumoData} />
-      </section>
-
-      <section className="charts-grid">
-        <div className="chart-container">
-          <TopChart data={operadoresData} title="Top 10 Operadores por Fechamento" />
-        </div>
-        <div className="chart-container">
-          <TopChart data={listasData} title="Top 10 Listas por Fechamento" />
-        </div>
-        <div className="chart-container">
-          <TopChart data={campanhasData} title="Top 10 Campanhas por Fechamento" />
-        </div>
-      </section>
-    </div>
+    <>
+      <nav className="main-nav">
+        <Link to="/">Visão Geral</Link>
+        <Link to="/resumo">Resumo</Link>
+        <Link to="/top-operadores">Top Operadores</Link>
+        <Link to="/top-listas">Top Listas</Link>
+        <Link to="/top-campanhas">Top Campanhas</Link>
+      </nav>
+      <main>
+        <Routes>
+          <Route path="/" element={<DashboardOverview />} />
+          <Route path="/resumo" element={<ResumoPage />} />
+          <Route path="/top-listas" element={<TopListasPage />} />
+          <Route path="/top-operadores" element={<TopOperadoresPage />} />
+          <Route path="/top-campanhas" element={<TopCampanhasPage />} />
+        </Routes>
+      </main>
+    </>
   );
 }
 
-export default App
+export default App;
