@@ -15,7 +15,6 @@ import {
 @Injectable()
 export class ImportService {
   private readonly logger = new Logger(ImportService.name);
-  private readonly DATA_URL = 'https://www.ibridge.com.br/dados-teste-tecnico.json';
 
   constructor(
     @InjectRepository(Campanha) private readonly campanhaRepo: Repository<Campanha>,
@@ -32,8 +31,14 @@ export class ImportService {
 
     await this.seedSituacoes();
 
+    const dataUrl = process.env.DATA_URL;
+    if (!dataUrl) {
+      this.logger.error('DATA_URL não está definida no arquivo .env');
+      return;
+    }
+
     this.logger.log('Buscando dados da URL...');
-    const { data } = await axios.get(this.DATA_URL);
+    const { data } = await axios.get(dataUrl);
     this.logger.log(`${data.length} registros encontrados.`);
 
     for (const item of data) {

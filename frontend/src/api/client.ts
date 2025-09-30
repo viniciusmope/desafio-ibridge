@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { ResumoItem, TopItem } from '../types/data';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
 export const getResumo = async (): Promise<ResumoItem[]> => {
