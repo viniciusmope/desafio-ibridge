@@ -1,35 +1,31 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route, Link } from 'react-router-dom';
+import { DashboardOverview } from './pages/DashboardOverview';
+import { ResumoPage } from './pages/ResumoPage';
+import { TopListasPage } from './pages/TopListasPage';
+import { TopOperadoresPage } from './pages/TopOperadoresPage';
+import { TopCampanhasPage } from './pages/TopCampanhasPage';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <nav className="main-nav">
+        <Link to="/">Visão Geral</Link>
+        <Link to="/resumo">Resumo</Link>
+        <Link to="/top-operadores">Top Operadores</Link>
+        <Link to="/top-listas">Top Listas</Link>
+        <Link to="/top-campanhas">Top Campanhas</Link>
+      </nav>
+      <main>
+        <Routes>
+          <Route path="/" element={<DashboardOverview />} />
+          <Route path="/resumo" element={<ResumoPage />} />
+          <Route path="/top-listas" element={<TopListasPage />} />
+          <Route path="/top-operadores" element={<TopOperadoresPage />} />
+          <Route path="/top-campanhas" element={<TopCampanhasPage />} />
+        </Routes>
+      </main>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
