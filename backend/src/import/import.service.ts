@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import axios from 'axios';
-import { DeepPartial, Repository } from 'typeorm'; 
+import { DeepPartial, In, Repository } from 'typeorm';
 import {
   Campanha,
   Categoria,
@@ -39,59 +39,72 @@ export class ImportService {
 
     this.logger.log('Buscando dados da URL...');
     const { data } = await axios.get(dataUrl);
-    this.logger.log(`${data.length} registros encontrados.`);
+    this.logger.log(`${data.length} registros encontrados. Iniciando processamento...`);
+
+    const campanhasMap = new Map<number, DeepPartial<Campanha> & { id: number }>();
+    const listasMap = new Map<number, DeepPartial<Lista> & { id: number }>();
+    const operadoresMap = new Map<number, DeepPartial<Operador> & { id: number }>();
+    const contatosMap = new Map<number, DeepPartial<Contato> & { id: number }>();
+    const categoriasMap = new Map<number, DeepPartial<Categoria> & { id: number }>();
 
     for (const item of data) {
-      const telefone = item.chamada_telefone?.toString().replace(/\D/g, '') || '';
+      if (!campanhasMap.has(item.campanha_id)) {
+        campanhasMap.set(item.campanha_id, { id: item.campanha_id, nome: item.campanha_nome });
+      }
+      if (!listasMap.has(item.lista_id)) {
+        listasMap.set(item.lista_id, { id: item.lista_id, nome: item.lista_nome, campanha: { id: item.campanha_id } });
+      }
+      if (!operadoresMap.has(item.chamada_operador_id)) {
+        operadoresMap.set(item.chamada_operador_id, { id: item.chamada_operador_id, nome: item.chamada_operador_nome });
+      }
+      if (!contatosMap.has(item.contato_id)) {
+        const telefone = item.chamada_telefone?.toString().replace(/\D/g, '') || '';
+        contatosMap.set(item.contato_id, { id: item.contato_id, nome: item.contato_nome, telefone });
+      }
+      if (!categoriasMap.has(item.chamada_categoria_id)) {
+        categoriasMap.set(item.chamada_categoria_id, { id: item.chamada_categoria_id, nome: item.chamada_categoria_nome });
+      }
+    }
 
+    this.logger.log('Sincronizando Campanhas...');
+    await this.findAndCreate(this.campanhaRepo, [...campanhasMap.values()]);
+    
+    this.logger.log('Sincronizando Operadores...');
+    await this.findAndCreate(this.operadorRepo, [...operadoresMap.values()]);
+
+    this.logger.log('Sincronizando Contatos...');
+    await this.findAndCreate(this.contatoRepo, [...contatosMap.values()]);
+
+    this.logger.log('Sincronizando Categorias...');
+    await this.findAndCreate(this.categoriaRepo, [...categoriasMap.values()]);
+
+    this.logger.log('Sincronizando Listas...');
+    await this.findAndCreate(this.listaRepo, [...listasMap.values()]);
+
+    this.logger.log('Montando as chamadas...');
+    const chamadasToInsert: DeepPartial<Chamada>[] = data.map(item => {
       const [datePart, timePart] = item.chamada_datahora.split(' ');
       const [day, month, year] = datePart.split('/');
-      const datahora = new Date(`${year}-${month}-${day}T${timePart}:00`);
-      
-      const campanha = await this.findOrCreate(this.campanhaRepo, { 
-        id: item.campanha_id, 
-        nome: item.campanha_nome 
-      });
+      const datahora = new Date(`${year}-${month}-${day}T${timePart}`);
 
-      const lista = await this.findOrCreate(this.listaRepo, { 
-        id: item.lista_id, 
-        nome: item.lista_nome, 
-        campanha 
-      });
-
-      const operador = await this.findOrCreate(this.operadorRepo, { 
-        id: item.chamada_operador_id, 
-        nome: item.chamada_operador_nome 
-      });
-
-      const contato = await this.findOrCreate(this.contatoRepo, { 
-        id: item.contato_id, 
-        nome: item.contato_nome, 
-        telefone 
-      });
-      
-      const categoria = await this.findOrCreate(this.categoriaRepo, { 
-        id: item.chamada_categoria_id, 
-        nome: item.chamada_categoria_nome 
-      });
-      
-      const chamada = this.chamadaRepo.create({
+      return {
         id: item.chamada_id,
         datahora,
-        contato,
-        lista,
-        campanha,
-        operador,
-        categoria,
+        contato: { id: item.contato_id },
+        lista: { id: item.lista_id },
+        campanha: { id: item.campanha_id },
+        operador: { id: item.chamada_operador_id },
+        categoria: { id: item.chamada_categoria_id },
         situacao: { id: item.chamada_situacao_id },
-      });
-      
-      await this.chamadaRepo.save(chamada);
-    }
+      };
+    });
+
+    this.logger.log(`Inserindo ${chamadasToInsert.length} chamadas...`);
+    await this.chamadaRepo.save(chamadasToInsert, { chunk: 500 });
 
     this.logger.log('Importação concluída com sucesso!');
   }
-  
+
   private async seedSituacoes() {
     this.logger.log('Verificando e semeando situações...');
     await this.situacaoRepo.save([
@@ -102,17 +115,28 @@ export class ImportService {
     ]);
   }
 
-  private async findOrCreate<T extends { id: number }>(
+  private async findAndCreate<T extends { id: number }>(
     repo: Repository<T>,
-    entityData: DeepPartial<T> & { id: number },
-  ): Promise<T> {
-
-    const found = await repo.findOneBy({ id: entityData.id } as any);
-    
-    if (found) {
-      return found;
+    entities: (DeepPartial<T> & { id: number })[],
+  ) {
+    if (entities.length === 0) {
+      return;
     }
+
+    const entityIds = entities.map((e) => e.id);
+
+    const foundEntities = await repo.find({
+      where: { id: In(entityIds) } as any,
+      select: ['id'] as any,
+    });
     
-    return repo.save(entityData);
+    const foundIds = new Set(foundEntities.map((e) => e.id));
+
+    const newEntities = entities.filter((e) => !foundIds.has(e.id));
+
+    if (newEntities.length > 0) {
+      this.logger.log(`Criando ${newEntities.length} novos registros em ${repo.metadata.tableName}...`);
+      await repo.save(newEntities, { chunk: 500 });
+    }
   }
 }
